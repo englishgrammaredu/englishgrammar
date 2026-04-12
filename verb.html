@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Powerful Verbs</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        h1 { color: #1a73e8; margin-top: 0; }
+        .word { font-size: 2.5rem; font-weight: bold; margin: 10px 0; color: #202124; }
+        .pronunciation { font-style: italic; color: #5f6368; margin-bottom: 15px; }
+        .definition { font-size: 1.1rem; line-height: 1.5; color: #3c4043; min-height: 3em; }
+        button {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px 5px;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #174ea6; }
+        button:disabled { background-color: #bdc1c6; cursor: not-allowed; }
+        .audio-btn { background-color: #34a853; }
+        .audio-btn:hover { background-color: #2d8e47; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Powerful Verbs</h1>
+    <div id="display-area">
+        <div class="word" id="word">---</div>
+        <div class="pronunciation" id="pron">Click the start button.</div>
+        <div class="definition" id="defn">Click start.</div>
+    </div>
+    <br>
+    <button onclick="getRandomVerb()">New powerful verb</button>
+    <button id="audioBtn" class="audio-btn" onclick="playAudio()" disabled>Play the pronounciation</button>
+    <audio id="player"></audio>
+</div>
+
+<script>
+    let verbList = [];
+    const audioBtn = document.getElementById('audioBtn');
+    const player = document.getElementById('player');
+
+    // 1. Fetch the text file from your GitHub repo
+    async function loadVerbs() {
+        try {
+            const response = await fetch('verbs1.txt');
+            const text = await response.text();
+            // Split by lines and filter out empty ones
+            verbList = text.split('\n').filter(line => line.trim() !== "");
+        } catch (err) {
+            document.getElementById('defn').innerText = "yeah it crashed";
+        }
+    }
+
+    async function getRandomVerb() {
+        if (verbList.length === 0) await loadVerbs();
+        
+        // Pick a random line
+        const randomIndex = Math.floor(Math.random() * verbList.length);
+        const line = verbList[randomIndex];
+        
+        // Split by the pipe |
+        const [word, pron, defn] = line.split('|');
+
+        // Update UI
+        document.getElementById('word').innerText = word.trim();
+        document.getElementById('pron').innerText = `[${pron.trim()}]`;
+        document.getElementById('defn').innerText = defn.trim();
+
+        // 2. Get Audio from Dictionary API
+        fetchAudio(word.trim());
+    }
+
+    async function fetchAudio(word) {
+        audioBtn.disabled = true;
+        try {
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+            const data = await response.json();
+            
+            // Find the first available audio link in the phonetics array
+            const audioUrl = data[0].phonetics.find(p => p.audio !== "")?.audio;
+
+            if (audioUrl) {
+                player.src = audioUrl;
+                audioBtn.disabled = false;
+            }
+        } catch (err) {
+            console.log("WHERE'S THE AUDIO?!");
+        }
+    }
+
+    function playAudio() {
+        player.play();
+    }
+
+    // Initial Load
+    window.onload = loadVerbs;
+</script>
+
+</body>
+</html>
